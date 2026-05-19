@@ -16,7 +16,7 @@ import os
 import re
 import sys
 import time
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import anthropic
@@ -24,7 +24,7 @@ import requests
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent.parent.parent   # repo root
-MODEL     = "claude-sonnet-4-5"                   # Sonnet: quality matters for public posts
+MODEL     = "claude-sonnet-4-6"                   # Sonnet: quality matters for public posts
 MAX_TOKENS = 8192
 MAX_TURNS  = 30
 INTER_TURN_SLEEP = 30   # facts agent reads less data than strategy blog — shorter pauses
@@ -208,14 +208,15 @@ def run_agent(agent_type: str) -> None:
 
     system_prompt = prompt_path.read_text(encoding="utf-8")
 
+    hour = datetime.utcnow().hour
     date_context = (
         f"\n\n---\n"
         f"**Context injected at runtime:**\n"
         f"- Today's date: {today_str()}\n"
         f"- Day of week: {date.today().strftime('%A')}\n"
         f"- Month and day: {today_month_day()}\n"
-        f"- Brief file to write: briefs/brief-{today_str()}.md\n"
-        f"- Post record file to write: posts/daily-{today_str()}.md\n"
+        f"- Brief file to write: briefs/brief-{today_str()}-{hour:02d}.md\n"
+        f"- Post record file to write: posts/daily-{today_str()}-{hour:02d}.md\n"
     )
 
     system_prompt = system_prompt + date_context

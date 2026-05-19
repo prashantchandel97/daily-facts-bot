@@ -1,8 +1,11 @@
-name: Daily Facts Brief
+name: Daily Facts
 
 on:
   schedule:
-    - cron: '0 13 * * *'   # 8 AM CDT (UTC-5) every day — runs before you wake up
+    - cron: '0 13 * * *'   # 8 AM CDT
+    - cron: '0 16 * * *'   # 11 AM CDT
+    - cron: '0 19 * * *'   # 2 PM CDT
+    - cron: '0 22 * * *'   # 5 PM CDT
   workflow_dispatch:
 
 jobs:
@@ -21,7 +24,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests python-dotenv
+        run: pip install anthropic requests python-dotenv tweepy
 
       - name: Run facts-generator agent
         env:
@@ -35,10 +38,14 @@ jobs:
           git config user.name "Daily Facts Bot"
           git add briefs/ posts/ || true
           git diff --staged --quiet && echo "Nothing to commit" || \
-            git commit -m "Fact: $(date +'%a %b %d')" && git pull --rebase && git push
+            git commit -m "Fact: $(date +'%a %b %d %H:%M UTC')" && git pull --rebase && git push
 
-      - name: Send brief to Telegram
+      - name: Post to X and send Telegram brief
         env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python3 facts_publisher.py
@@ -49,4 +56,4 @@ jobs:
           git config user.name "Daily Facts Bot"
           git add briefs/ || true
           git diff --staged --quiet && echo "Nothing to log" || \
-            git commit -m "Log: fact brief sent $(date +'%b %d')" && git pull --rebase && git push
+            git commit -m "Log: posted $(date +'%b %d %H:%M UTC')" && git pull --rebase && git push
