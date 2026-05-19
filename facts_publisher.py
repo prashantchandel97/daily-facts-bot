@@ -130,31 +130,26 @@ def post_to_x(tweet_text: str, dry_run: bool = False) -> bool:
         return False
 
     try:
-        import tweepy
+        from requests_oauthlib import OAuth1Session
     except ImportError:
-        print("[Error] tweepy not installed — run: pip install tweepy", file=sys.stderr)
+        print("[Error] requests-oauthlib not installed", file=sys.stderr)
         return False
 
     print(f"  api_key prefix: {api_key[:6]}... acc_token prefix: {acc_token[:10]}...")
     try:
-        client = tweepy.Client(
-            consumer_key=api_key,
-            consumer_secret=api_secret,
-            access_token=acc_token,
-            access_token_secret=acc_secret,
+        oauth = OAuth1Session(api_key, api_secret, acc_token, acc_secret)
+        resp  = oauth.post(
+            "https://api.twitter.com/2/tweets",
+            json={"text": tweet_text},
         )
-        resp     = client.create_tweet(text=tweet_text)
-        tweet_id = resp.data.get("id", "?")
-        print(f"  Posted to X: tweet_id={tweet_id}")
-        return True
-    except tweepy.errors.Unauthorized as e:
-        print(f"  [Error] 401 Unauthorized: {e}", file=sys.stderr)
-        print(f"  Response: {e.response.text if hasattr(e, 'response') else 'no response body'}", file=sys.stderr)
-        return False
-    except tweepy.errors.Forbidden as e:
-        print(f"  [Error] 403 Forbidden: {e}", file=sys.stderr)
-        print(f"  Response: {e.response.text if hasattr(e, 'response') else 'no response body'}", file=sys.stderr)
-        return False
+        print(f"  Status: {resp.status_code}  Body: {resp.text[:200]}")
+        if resp.status_code == 201:
+            tweet_id = resp.json().get("data", {}).get("id", "?")
+            print(f"  Posted to X: tweet_id={tweet_id}")
+            return True
+        else:
+            print(f"  [Error] {resp.status_code}: {resp.text}", file=sys.stderr)
+            return False
     except Exception as e:
         print(f"  [Error] X post failed: {type(e).__name__}: {e}", file=sys.stderr)
         return False
