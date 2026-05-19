@@ -99,14 +99,14 @@ def parse_frontmatter(post_file: Path) -> dict:
     return fm
 
 
-def already_processed(brief_file: Path) -> bool:
+def already_processed(anchor: Path) -> bool:
     if not BRIEF_LOG.exists():
         return False
     try:
         log = json.loads(BRIEF_LOG.read_text())
         for entry in log:
-            if entry.get("brief_file") == brief_file.name:
-                print(f"[Skip] Already processed {brief_file.name}")
+            if entry.get("brief_file") == anchor.name and entry.get("posted_to_x"):
+                print(f"[Skip] Already posted {anchor.name}")
                 return True
     except Exception:
         pass
