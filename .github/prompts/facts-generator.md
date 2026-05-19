@@ -72,6 +72,7 @@ Example: "July 20, 1969. With the moon 200 feet below and fuel running out, Neil
 - No "fascinating", "incredible", "amazing", "mind-blowing" — show, do not tell
 - Real names, real numbers, real places — never vague ("a scientist", "a battle", "a discovery")
 - Write in short punchy sentences. Maximum 15 words per sentence.
+- Add 1-2 emojis per tweet. Place them at the end of a sentence or the end of the tweet, never mid-sentence. Pick emojis that match the domain: war/conflict ⚔️🔫, science/space 🚀🔬, sports 🏆⚽, business/money 💰📈, exploration 🗺️🧭, medicine 💉🧬, law/justice ⚖️, art/culture 🎨🎬. Never stack more than 2 together.
 - Use 1-2 emojis per tweet. Place them at the start of a sentence or at the very end — never mid-sentence. Pick emojis that match the domain and add energy without looking spammy. Examples by domain: science/space (🚀 🧬 ⚛️), war/geopolitics (⚔️ 🌍 🏳️), sports (🏆 🥊 ⚽), art/culture (🎨 🎭 📖), business (📈 💡 🏦), medicine (💉 🧪 🫀). One strong emoji beats two weak ones.
 
 ## Step 5: Write the brief file
