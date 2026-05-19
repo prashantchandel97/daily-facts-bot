@@ -1,0 +1,52 @@
+name: Daily Facts Brief
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 8 AM CDT (UTC-5) every day — runs before you wake up
+  workflow_dispatch:
+
+jobs:
+  facts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests python-dotenv
+
+      - name: Run facts-generator agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+        run: python3 .github/scripts/run_agent.py facts-generator
+
+      - name: Commit brief and post record
+        run: |
+          git config user.email "facts-bot@users.noreply.github.com"
+          git config user.name "Daily Facts Bot"
+          git add briefs/ posts/ || true
+          git diff --staged --quiet && echo "Nothing to commit" || \
+            git commit -m "Fact: $(date +'%a %b %d')" && git pull --rebase && git push
+
+      - name: Send brief to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 facts_publisher.py
+
+      - name: Commit send log
+        run: |
+          git config user.email "facts-bot@users.noreply.github.com"
+          git config user.name "Daily Facts Bot"
+          git add briefs/ || true
+          git diff --staged --quiet && echo "Nothing to log" || \
+            git commit -m "Log: fact brief sent $(date +'%b %d')" && git pull --rebase && git push

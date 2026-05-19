@@ -1,0 +1,33 @@
+# Daily Facts Bot — Configuration
+
+account:
+  x_handle: "@youraccount"   # update with your X handle
+  description: "One surprising thing from history, every day."
+
+tweet_style: |
+  Short punchy sentences. Maximum 15 words per sentence.
+  Lead with the most surprising detail, not the event name.
+  Real numbers, real names, real places.
+  No adjectives that tell the reader how to feel ("incredible", "amazing").
+  Show them the detail. Let them feel it.
+
+  Bad: "On this day in 1969, the amazing Apollo 11 mission landed on the moon."
+  Good: "17 seconds of fuel. That's what Apollo 11 had left when it touched down. Armstrong flew past boulders for 4 minutes. Houston watched. They said nothing."
+
+domain_rotation:
+  # Agent rotates through these domains to keep the feed varied
+  - geopolitics and war
+  - science and discovery
+  - sports
+  - art and culture
+  - business and economics
+  - geography and exploration
+  - law and justice
+  - medicine and public health
+
+quality_bar: |
+  Every fact must pass all four:
+  1. Surprising: a well-read person would not already know this
+  2. Specific: real number, real name, or real place
+  3. Human: a person, a decision, a consequence
+  4. Standalone: makes sense without setup paragraphs
