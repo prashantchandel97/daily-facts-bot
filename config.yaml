@@ -1,7 +1,7 @@
 # Daily Facts Bot — Configuration
 
 account:
-  x_handle: "@youraccount"   # update with your X handle
+  x_handle: "@lowvoice8"
   description: "One surprising thing from history, every day."
 
 tweet_style: |
