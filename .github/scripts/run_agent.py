@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Daily Facts Bot — Agent Runner
-Uses the Anthropic Python SDK to run the facts-generator agent.
+Uses the Anthropic Python SDK to run the facts-generator or batch-generator agent.
 
 Usage:
     python3 .github/scripts/run_agent.py facts-generator
+    python3 .github/scripts/run_agent.py batch-generator
 
 Requires:
     ANTHROPIC_API_KEY env var
@@ -26,8 +27,9 @@ import requests
 BASE_DIR  = Path(__file__).parent.parent.parent   # repo root
 MODEL     = "claude-sonnet-4-6"                   # Sonnet: quality matters for public posts
 MAX_TOKENS = 8192
-MAX_TURNS  = 30
-INTER_TURN_SLEEP = 30   # facts agent reads less data than strategy blog — shorter pauses
+MAX_TURNS_DAILY = 30
+MAX_TURNS_BATCH = 60   # batch writes 28 files — needs more turns
+INTER_TURN_SLEEP = 30
 
 
 # ── Date helpers ──────────────────────────────────────────────────────────────
@@ -37,6 +39,26 @@ def today_str() -> str:
 
 def today_month_day() -> str:
     return date.today().strftime("%B %-d")   # e.g. "May 18"
+
+
+def get_week_schedule() -> list[dict]:
+    """Return the 28 slots (4/day x 7 days) starting from tomorrow."""
+    from datetime import timedelta
+    slots = []
+    start = date.today() + timedelta(days=1)
+    hours = [13, 16, 19, 22]   # UTC hours matching 8am/11am/2pm/5pm CDT
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    for i in range(7):
+        d = start + timedelta(days=i)
+        for h in hours:
+            slots.append({
+                "date":      d.isoformat(),
+                "day":       day_names[d.weekday()],
+                "month_day": d.strftime("%B %-d"),
+                "hour":      h,
+                "path":      f"posts/daily-{d.isoformat()}-{h:02d}.md",
+            })
+    return slots
 
 
 # ── Tool implementations ───────────────────────────────────────────────────────
@@ -208,16 +230,31 @@ def run_agent(agent_type: str) -> None:
 
     system_prompt = prompt_path.read_text(encoding="utf-8")
 
-    hour = datetime.utcnow().hour
-    date_context = (
-        f"\n\n---\n"
-        f"**Context injected at runtime:**\n"
-        f"- Today's date: {today_str()}\n"
-        f"- Day of week: {date.today().strftime('%A')}\n"
-        f"- Month and day: {today_month_day()}\n"
-        f"- Brief file to write: briefs/brief-{today_str()}-{hour:02d}.md\n"
-        f"- Post record file to write: posts/daily-{today_str()}-{hour:02d}.md\n"
-    )
+    if agent_type == "batch-generator":
+        schedule = get_week_schedule()
+        lines = [f"  - {s['day']} {s['month_day']} {s['hour']:02d}:00 UTC → {s['path']}" for s in schedule]
+        date_context = (
+            f"\n\n---\n"
+            f"**Context injected at runtime:**\n"
+            f"- Batch run date: {today_str()}\n"
+            f"- Week to generate: {schedule[0]['date']} to {schedule[-1]['date']}\n"
+            f"- 28 slots to fill:\n" + "\n".join(lines) + "\n"
+        )
+        first_message = "Execute your task now. Generate all 28 facts for the week and write the post record files."
+        max_turns = MAX_TURNS_BATCH
+    else:
+        hour = datetime.utcnow().hour
+        date_context = (
+            f"\n\n---\n"
+            f"**Context injected at runtime:**\n"
+            f"- Today's date: {today_str()}\n"
+            f"- Day of week: {date.today().strftime('%A')}\n"
+            f"- Month and day: {today_month_day()}\n"
+            f"- Brief file to write: briefs/brief-{today_str()}-{hour:02d}.md\n"
+            f"- Post record file to write: posts/daily-{today_str()}-{hour:02d}.md\n"
+        )
+        first_message = "Execute your task now. Find today's fact and write the brief."
+        max_turns = MAX_TURNS_DAILY
 
     system_prompt = system_prompt + date_context
 
@@ -226,16 +263,14 @@ def run_agent(agent_type: str) -> None:
         max_retries=6,
     )
 
-    messages = [
-        {"role": "user", "content": "Execute your task now. Find today's fact and write the brief."}
-    ]
+    messages = [{"role": "user", "content": first_message}]
 
     print(f"\n=== Daily Facts Bot: {agent_type} ===")
     print(f"Today: {today_str()} ({today_month_day()})")
     print(f"Model: {MODEL}")
     print("=" * 50)
 
-    for turn in range(MAX_TURNS):
+    for turn in range(max_turns):
         print(f"\n[Turn {turn + 1}] Calling Claude API...")
 
         for attempt in range(6):
@@ -303,7 +338,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     agent_type = sys.argv[1]
-    valid = {"facts-generator"}
+    valid = {"facts-generator", "batch-generator"}
     if agent_type not in valid:
         print(f"ERROR: Unknown agent '{agent_type}'. Must be one of: {valid}", file=sys.stderr)
         sys.exit(1)

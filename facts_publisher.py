@@ -48,9 +48,37 @@ def find_todays_brief() -> Path | None:
     return candidate
 
 
+def find_todays_post_record() -> Path | None:
+    today = date.today().isoformat()
+    hour  = datetime.utcnow().hour
+    candidate = POSTS_DIR / f"daily-{today}-{hour:02d}.md"
+    if not candidate.exists() or candidate.stat().st_size == 0:
+        return None
+    return candidate
+
+
 def brief_to_post_record(brief_file: Path) -> Path:
     name = brief_file.stem.replace("brief-", "daily-")
     return POSTS_DIR / f"{name}.md"
+
+
+def build_telegram_from_post_record(post_record: Path) -> str:
+    fm    = parse_frontmatter(post_record)
+    tweet = fm.get("tweet_option_a", "").strip()
+    d     = fm.get("date", date.today().isoformat())
+    try:
+        day_label = datetime.strptime(d, "%Y-%m-%d").strftime("%A, %B %-d")
+    except Exception:
+        day_label = d
+    lines = [
+        f"DAILY FACTS | {day_label}",
+        "",
+        tweet,
+        "",
+        f"Domain: {fm.get('domain', '—')}  |  Year: {fm.get('year_of_event', '—')}",
+        f"Source: {fm.get('source', '—')}",
+    ]
+    return "\n".join(lines)
 
 
 def parse_frontmatter(post_file: Path) -> dict:
@@ -206,21 +234,24 @@ def main():
     if args.dry_run:
         print("=== DRY RUN MODE ===")
 
-    brief_file = find_todays_brief()
-    if not brief_file:
+    # Support two modes: brief file (daily agent) or post record only (batch generator)
+    brief_file  = find_todays_brief()
+    post_record = brief_to_post_record(brief_file) if brief_file else find_todays_post_record()
+
+    if not post_record:
         hour = datetime.utcnow().hour
-        print(f"[Skip] No brief for {date.today().isoformat()} slot {hour:02d}.")
+        print(f"[Skip] No content for {date.today().isoformat()} slot {hour:02d}.")
         sys.exit(0)
 
-    print(f"Brief: {brief_file.name} ({brief_file.stat().st_size} bytes)")
+    anchor = brief_file or post_record
+    print(f"Content: {anchor.name} ({anchor.stat().st_size} bytes)")
 
-    if already_processed(brief_file):
+    if already_processed(anchor):
         sys.exit(0)
 
-    # Extract tweet option A from the post record frontmatter
-    post_record = brief_to_post_record(brief_file)
-    fm          = parse_frontmatter(post_record)
-    tweet_text  = fm.get("tweet_option_a", "").strip()
+    # Extract tweet
+    fm         = parse_frontmatter(post_record)
+    tweet_text = fm.get("tweet_option_a", "").strip()
 
     # Post to X
     posted_x = False
@@ -228,20 +259,25 @@ def main():
         print(f"\nPosting to X ({len(tweet_text)} chars):\n  {tweet_text[:120]}")
         posted_x = post_to_x(tweet_text, dry_run=args.dry_run)
     else:
-        print("[Warn] tweet_option_a not found in post record — skipping X post.", file=sys.stderr)
+        print("[Warn] tweet_option_a not found — skipping X post.", file=sys.stderr)
 
-    # Append status line to brief before Telegram
-    brief_text = brief_file.read_text()
-    if not args.dry_run:
-        if posted_x:
-            brief_text = brief_text.rstrip() + "\n\nPosted to X: option A"
-        elif tweet_text:
-            brief_text = brief_text.rstrip() + "\n\nX post failed — check logs"
+    # Build Telegram message
+    if brief_file:
+        brief_text = brief_file.read_text()
+        if not args.dry_run:
+            suffix = "\n\nPosted to X: option A" if posted_x else ("\n\nX post failed — check logs" if tweet_text else "")
+            brief_text = brief_text.rstrip() + suffix
+    else:
+        brief_text = build_telegram_from_post_record(post_record)
+        if not args.dry_run and posted_x:
+            brief_text += "\n\nPosted to X."
+        elif not args.dry_run and tweet_text:
+            brief_text += "\n\nX post failed — check logs."
 
     sent_telegram = send_telegram(brief_text, dry_run=args.dry_run)
 
     if not args.dry_run:
-        write_log(brief_file, sent_telegram=sent_telegram, posted_to_x=posted_x)
+        write_log(anchor, sent_telegram=sent_telegram, posted_to_x=posted_x)
 
     if posted_x or sent_telegram:
         print("\n[Done]")

@@ -1,0 +1,38 @@
+name: Weekly Batch Generator
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'   # Sunday 11pm UTC (6pm CDT) — generates Mon-Sun ahead
+  workflow_dispatch:
+
+jobs:
+  batch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests python-dotenv
+
+      - name: Generate week of facts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+        run: python3 .github/scripts/run_agent.py batch-generator
+
+      - name: Commit post records
+        run: |
+          git config user.email "facts-bot@users.noreply.github.com"
+          git config user.name "Daily Facts Bot"
+          git add posts/ || true
+          git diff --staged --quiet && echo "Nothing to commit" || \
+            git commit -m "Batch: week of $(date +'%b %d')" && git pull --rebase && git push

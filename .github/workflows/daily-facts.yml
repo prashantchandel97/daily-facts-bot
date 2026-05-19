@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  facts:
+  post:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,21 +24,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests python-dotenv tweepy
-
-      - name: Run facts-generator agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
-        run: python3 .github/scripts/run_agent.py facts-generator
-
-      - name: Commit brief and post record
-        run: |
-          git config user.email "facts-bot@users.noreply.github.com"
-          git config user.name "Daily Facts Bot"
-          git add briefs/ posts/ || true
-          git diff --staged --quiet && echo "Nothing to commit" || \
-            git commit -m "Fact: $(date +'%a %b %d %H:%M UTC')" && git pull --rebase && git push
+        run: pip install requests python-dotenv tweepy
 
       - name: Post to X and send Telegram brief
         env:
