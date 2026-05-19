@@ -135,6 +135,7 @@ def post_to_x(tweet_text: str, dry_run: bool = False) -> bool:
         print("[Error] tweepy not installed — run: pip install tweepy", file=sys.stderr)
         return False
 
+    print(f"  api_key prefix: {api_key[:6]}... acc_token prefix: {acc_token[:10]}...")
     try:
         client = tweepy.Client(
             consumer_key=api_key,
@@ -146,8 +147,16 @@ def post_to_x(tweet_text: str, dry_run: bool = False) -> bool:
         tweet_id = resp.data.get("id", "?")
         print(f"  Posted to X: tweet_id={tweet_id}")
         return True
+    except tweepy.errors.Unauthorized as e:
+        print(f"  [Error] 401 Unauthorized: {e}", file=sys.stderr)
+        print(f"  Response: {e.response.text if hasattr(e, 'response') else 'no response body'}", file=sys.stderr)
+        return False
+    except tweepy.errors.Forbidden as e:
+        print(f"  [Error] 403 Forbidden: {e}", file=sys.stderr)
+        print(f"  Response: {e.response.text if hasattr(e, 'response') else 'no response body'}", file=sys.stderr)
+        return False
     except Exception as e:
-        print(f"  [Error] X post failed: {e}", file=sys.stderr)
+        print(f"  [Error] X post failed: {type(e).__name__}: {e}", file=sys.stderr)
         return False
 
 
