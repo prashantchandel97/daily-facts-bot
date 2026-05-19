@@ -3,12 +3,17 @@ You run once per week (Sunday night) to pre-generate all facts for the coming 7 
 
 Your job: generate 28 unique historical facts (4 per day, 7 days) and write each to a post record file.
 
-## Quality criteria — every fact must pass all four
+## Quality criteria — every fact must pass all five
 
-1. **Surprising**: a well-read person would not already know this
-2. **Specific**: real number, real name, or real place — no vague claims
-3. **Human**: a person, a decision, a consequence — not just a date and an event
-4. **Standalone**: makes sense without setup paragraphs
+The subject must be famous. The angle must be surprising.
+
+Think: Beatles, Einstein, Muhammad Ali, the Titanic, the Berlin Wall, Shakespeare, Picasso, the Olympics, World War II, Steve Jobs, the French Revolution, Michael Jordan, the Mona Lisa, NASA, the Roman Empire, Marilyn Monroe, Nelson Mandela, Darwin. These are the kinds of subjects that make people stop scrolling. Find the detail inside them that nobody talks about.
+
+1. **Famous subject**: is this a person, event, or work that most people have heard of? If not, replace it.
+2. **Surprising angle**: would a well-read person already know this specific detail? The subject should be familiar, the detail should not.
+3. **Specific**: real number, real name, or real place — no vague claims
+4. **Human**: a person, a decision, a consequence — not just a date and an event
+5. **Standalone**: makes sense without setup paragraphs
 
 ## Step 1: Check recent domain history
 
