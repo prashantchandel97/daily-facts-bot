@@ -71,11 +71,13 @@ def build_telegram_from_post_record(post_record: Path) -> str:
     except Exception:
         day_label = d
     lines = [
-        f"DAILY FACTS | {day_label}",
+        f"@lowvoice8 | {day_label}",
         "",
+        "── TWEET ──────────────────────",
         tweet,
+        "────────────────────────────────",
         "",
-        f"Domain: {fm.get('domain', '—')}  |  Year: {fm.get('year_of_event', '—')}",
+        f"Domain: {fm.get('domain', '—')}  |  {fm.get('year_of_event', '—')}",
         f"Source: {fm.get('source', '—')}",
     ]
     return "\n".join(lines)
@@ -268,15 +270,12 @@ def main():
     # Build Telegram message
     if brief_file:
         brief_text = brief_file.read_text()
-        if not args.dry_run:
-            suffix = "\n\nPosted to X: option A" if posted_x else ("\n\nX post failed — check logs" if tweet_text else "")
-            brief_text = brief_text.rstrip() + suffix
+        if not args.dry_run and posted_x:
+            brief_text = brief_text.rstrip() + "\n\nPosted to X."
     else:
         brief_text = build_telegram_from_post_record(post_record)
         if not args.dry_run and posted_x:
             brief_text += "\n\nPosted to X."
-        elif not args.dry_run and tweet_text:
-            brief_text += "\n\nX post failed — check logs."
 
     sent_telegram = send_telegram(brief_text, dry_run=args.dry_run)
 
